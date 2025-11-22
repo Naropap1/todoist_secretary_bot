@@ -59,6 +59,8 @@ You need to create a `credentials.json` file in the root directory. A template `
     *   Click "Create Credentials" > "OAuth client ID".
     *   Application type: **Desktop app**.
     *   Download the JSON file, rename it to `client_secret.json`, and place it in the root directory of this project.
+    *   Navigate to APIs & Services > OAuth consent screen > Audience.
+    *   Add any users who will use the service with `+ Add Users`.
 
 ### 3. First Run
 

@@ -14,7 +14,7 @@ class GeminiManager:
 
         # Initialize the model with tools
         self.model = genai.GenerativeModel(
-            model_name='gemini-1.5-flash', # Using 1.5 Flash as it's efficient and supports tools
+            model_name='gemini-1.5-flash-001', # Using 1.5 Flash as it's efficient and supports tools
             tools=self.tools
         )
 

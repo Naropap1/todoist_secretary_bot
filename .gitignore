@@ -1,0 +1,14 @@
+# Secrets
+credentials.json
+client_secret.json
+token.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.env
+
+# MacOS
+.DS_Store

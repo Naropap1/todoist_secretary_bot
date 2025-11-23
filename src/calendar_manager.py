@@ -18,6 +18,7 @@ class CalendarManager:
         self.client_secret_file = client_secret_file
         self.token_file = token_file
         self.service = None
+        self.bot_calendar_id = None
         self.authenticate()
 
     def authenticate(self):
@@ -49,9 +50,46 @@ class CalendarManager:
 
         try:
             self.service = build("calendar", "v3", credentials=self.creds)
+            self.bot_calendar_id = self._get_or_create_secretary_calendar()
         except HttpError as error:
             print(f"An error occurred: {error}")
             self.service = None
+
+    def _get_or_create_secretary_calendar(self):
+        """Finds the 'secretary_bot' calendar or creates it if it doesn't exist."""
+        if not self.service:
+            return None
+
+        calendar_name = "secretary_bot"
+
+        # List all calendars the user has access to
+        page_token = None
+        while True:
+            calendar_list = (
+                self.service.calendarList().list(pageToken=page_token).execute()
+            )
+            for calendar_list_entry in calendar_list["items"]:
+                if calendar_list_entry["summary"] == calendar_name:
+                    return calendar_list_entry["id"]
+            page_token = calendar_list.get("nextPageToken")
+            if not page_token:
+                break
+
+        # If not found, create it
+        try:
+            # Attempt to get primary calendar timezone
+            primary_cal = self.service.calendars().get(calendarId="primary").execute()
+            time_zone = primary_cal.get("timeZone", "UTC")
+        except HttpError:
+            time_zone = "UTC"
+
+        new_calendar = {
+            "summary": calendar_name,
+            "timeZone": time_zone,
+        }
+
+        created_calendar = self.service.calendars().insert(body=new_calendar).execute()
+        return created_calendar["id"]
 
     def add_event(
         self, summary: str, start_time: str, end_time: str, description: str = None
@@ -70,6 +108,8 @@ class CalendarManager:
         """
         if not self.service:
             return "Calendar service not initialized."
+
+        calendar_id = self.bot_calendar_id or "primary"
 
         def ensure_timezone(time_str):
             try:
@@ -93,7 +133,9 @@ class CalendarManager:
 
         try:
             event = (
-                self.service.events().insert(calendarId="primary", body=event).execute()
+                self.service.events()
+                .insert(calendarId=calendar_id, body=event)
+                .execute()
             )
             return f"Event created: {event.get('htmlLink')}"
         except HttpError as error:
@@ -105,25 +147,40 @@ class CalendarManager:
             return "Calendar service not initialized."
 
         now = datetime.datetime.utcnow().isoformat() + "Z"  # 'Z' indicates UTC time
-        try:
-            events_result = (
-                self.service.events()
-                .list(
-                    calendarId="primary",
-                    timeMin=now,
-                    maxResults=max_results,
-                    singleEvents=True,
-                    orderBy="startTime",
-                )
-                .execute()
-            )
-            events = events_result.get("items", [])
+        all_events = []
+        calendars_to_check = ["primary"]
+        if self.bot_calendar_id and self.bot_calendar_id != "primary":
+            calendars_to_check.append(self.bot_calendar_id)
 
-            if not events:
+        try:
+            for cal_id in calendars_to_check:
+                events_result = (
+                    self.service.events()
+                    .list(
+                        calendarId=cal_id,
+                        timeMin=now,
+                        maxResults=max_results,
+                        singleEvents=True,
+                        orderBy="startTime",
+                    )
+                    .execute()
+                )
+                all_events.extend(events_result.get("items", []))
+
+            if not all_events:
                 return "No upcoming events found."
 
+            # Sort combined events by start time
+            all_events.sort(
+                key=lambda x: x["start"].get("dateTime", x["start"].get("date"))
+            )
+            # Limit to max_results? Or maybe just show all gathered?
+            # The original method was limiting results per request.
+            # Here we might get max_results * 2. Let's slice it.
+            all_events = all_events[:max_results]
+
             result_str = "Upcoming events:\n"
-            for event in events:
+            for event in all_events:
                 start = event["start"].get("dateTime", event["start"].get("date"))
                 result_str += f"{start} - {event['summary']}\n"
             return result_str
@@ -153,25 +210,36 @@ class CalendarManager:
             datetime.datetime.combine(date, datetime.time.max).astimezone().isoformat()
         )
 
-        try:
-            events_result = (
-                self.service.events()
-                .list(
-                    calendarId="primary",
-                    timeMin=start_of_day,
-                    timeMax=end_of_day,
-                    singleEvents=True,
-                    orderBy="startTime",
-                )
-                .execute()
-            )
-            events = events_result.get("items", [])
+        all_events = []
+        calendars_to_check = ["primary"]
+        if self.bot_calendar_id and self.bot_calendar_id != "primary":
+            calendars_to_check.append(self.bot_calendar_id)
 
-            if not events:
+        try:
+            for cal_id in calendars_to_check:
+                events_result = (
+                    self.service.events()
+                    .list(
+                        calendarId=cal_id,
+                        timeMin=start_of_day,
+                        timeMax=end_of_day,
+                        singleEvents=True,
+                        orderBy="startTime",
+                    )
+                    .execute()
+                )
+                all_events.extend(events_result.get("items", []))
+
+            if not all_events:
                 return f"No events found for {date}."
 
+            # Sort combined events by start time
+            all_events.sort(
+                key=lambda x: x["start"].get("dateTime", x["start"].get("date"))
+            )
+
             result_str = f"Events for {date}:\n"
-            for event in events:
+            for event in all_events:
                 start = event["start"].get("dateTime", event["start"].get("date"))
                 end = event["end"].get("dateTime", event["end"].get("date"))
                 summary = event.get("summary", "No Title")

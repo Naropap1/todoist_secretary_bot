@@ -153,7 +153,21 @@ class CalendarManager:
             result_str = f"Events for {date}:\n"
             for event in events:
                 start = event["start"].get("dateTime", event["start"].get("date"))
-                result_str += f"- {start}: {event['summary']}\n"
+                end = event["end"].get("dateTime", event["end"].get("date"))
+                summary = event.get("summary", "No Title")
+                description = event.get("description", "")
+                location = event.get("location", "")
+
+                result_str += f"- {summary}\n"
+                result_str += f"  Start: {start}\n"
+                result_str += f"  End: {end}\n"
+                if location:
+                    result_str += f"  Location: {location}\n"
+                if description:
+                    # Truncate description if it's too long to avoid cluttering the prompt
+                    short_desc = (description[:100] + '...') if len(description) > 100 else description
+                    result_str += f"  Description: {short_desc}\n"
+                result_str += "\n"
             return result_str
 
         except HttpError as error:

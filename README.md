@@ -15,7 +15,7 @@ This Python script transforms your daily planning by integrating **Todoist**, **
     *   **Relevant Links:** Quick access to resources.
     *   **Easter Eggs:** Fun emojis and jokes to keep you motivated!
 *   **🛡️ Robust & Reliable:** Built-in error handling and rate-limiting protections ensure smooth operation even when API services are busy.
-*   **🔒 Secure:** Your credentials are kept safe locally.
+*   **🔒 Secure:** Your credentials are kept safe locally in the `tokens/` directory.
 
 ## Prerequisites
 

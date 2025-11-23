@@ -70,7 +70,9 @@ def main():
                 "client_secret_file", "client_secret.json"
             )
             # Unique token file for each user
-            token_file = f"token_{safe_user_id}.json"
+            tokens_dir = "tokens"
+            os.makedirs(tokens_dir, exist_ok=True)
+            token_file = os.path.join(tokens_dir, f"token_{safe_user_id}.json")
             calendar_manager = CalendarManager(
                 client_secret_file=client_secret, token_file=token_file
             )

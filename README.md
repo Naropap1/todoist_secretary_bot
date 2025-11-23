@@ -1,6 +1,20 @@
 # AI Personal Assistant Script
 
-This Python script integrates Todoist, Google Calendar, and Google Gemini (AI) to help you plan your day. It fetches your overdue and due-today tasks from Todoist and uses Gemini to intelligently schedule them on your Google Calendar for the following day.
+This Python script transforms your daily planning by integrating **Todoist**, **Google Calendar**, and **Google Gemini (AI)**. It acts as your intelligent secretary, fetching your overdue and due-today tasks and orchestrating a perfect schedule for you.
+
+## 🌟 Key Features
+
+*   **🧠 Smart Daily Planning:** Automatically fetches overdue and due-today tasks from Todoist and schedules them into your Google Calendar.
+*   **🗓️ Context-Aware Scheduling:** Checks your existing calendar events to ensure zero conflicts. It respects your time and works *around* your schedule.
+*   **⏰ Personalized Routines:** Takes your personal habits (wake-up time, meal times, work hours) into account to create a realistic and sustainable plan.
+*   **🤖 Powered by Google Gemini:** Uses Google's advanced AI models to prioritize tasks, estimate durations, and make intelligent scheduling decisions.
+*   **📝 Rich Event Descriptions:** Generates detailed calendar event descriptions that include:
+    *   **Value Proposition:** Why this task is important.
+    *   **Actionable Steps:** Breakdowns for larger tasks.
+    *   **Relevant Links:** Quick access to resources.
+    *   **Easter Eggs:** Fun emojis and jokes to keep you motivated!
+*   **🛡️ Robust & Reliable:** Built-in error handling and rate-limiting protections ensure smooth operation even when API services are busy.
+*   **🔒 Secure:** Your credentials are kept safe locally.
 
 ## Prerequisites
 
@@ -81,5 +95,5 @@ It is recommended to run this script once a day (e.g., in the evening) to plan f
 
 ## Customization
 
-*   **Prompt**: You can modify the `PREAMBLE_PROMPT` in `main.py` to change how the AI prioritizes or schedules tasks.
-*   **Model**: The script uses `gemini-1.5-flash`. You can change this in `src/gemini_manager.py`.
+*   **Preferences**: You can modify `PERSONAL_SCHEDULING_PREFERENCES` in `main.py` to adjust your daily routine, work hours, and meal times.
+*   **Model**: The script is configured to use `gemini-2.5-pro`. You can change this in `src/gemini_manager.py` if needed.

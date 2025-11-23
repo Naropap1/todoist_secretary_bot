@@ -48,7 +48,7 @@ class CalendarManager:
             print(f"An error occurred: {error}")
             self.service = None
 
-    def add_event(self, summary, start_time, end_time, description=None):
+    def add_event(self, summary: str, start_time: str, end_time: str, description: str = None) -> str:
         """
         Adds an event to the calendar.
 

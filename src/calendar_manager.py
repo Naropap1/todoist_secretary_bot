@@ -114,3 +114,47 @@ class CalendarManager:
 
         except HttpError as error:
             return f"An error occurred: {error}"
+
+    def get_events_for_day(self, date: datetime.date) -> str:
+        """
+        Gets events for a specific day.
+
+        Args:
+            date (datetime.date): The date to fetch events for.
+
+        Returns:
+            str: A string representation of the events.
+        """
+        if not self.service:
+            return "Calendar service not initialized."
+
+        # Create start and end time for the given date in the local system's timezone
+        # astimezone() on a naive datetime assumes local time and adds the offset
+        start_of_day = datetime.datetime.combine(date, datetime.time.min).astimezone().isoformat()
+        end_of_day = datetime.datetime.combine(date, datetime.time.max).astimezone().isoformat()
+
+        try:
+            events_result = (
+                self.service.events()
+                .list(
+                    calendarId="primary",
+                    timeMin=start_of_day,
+                    timeMax=end_of_day,
+                    singleEvents=True,
+                    orderBy="startTime",
+                )
+                .execute()
+            )
+            events = events_result.get("items", [])
+
+            if not events:
+                return f"No events found for {date}."
+
+            result_str = f"Events for {date}:\n"
+            for event in events:
+                start = event["start"].get("dateTime", event["start"].get("date"))
+                result_str += f"- {start}: {event['summary']}\n"
+            return result_str
+
+        except HttpError as error:
+            return f"An error occurred while fetching events for {date}: {error}"

@@ -21,9 +21,15 @@ class GeminiManager:
         # Get tomorrow's date for context, as the user wants to update calendar for the next day
         tomorrow = datetime.date.today() + datetime.timedelta(days=1)
 
+        # Fetch existing events for tomorrow
+        existing_events = self.calendar_manager.get_events_for_day(tomorrow)
+
         full_prompt = f"""
         Current Date: {datetime.date.today()}
         Target Date for Planning: {tomorrow}
+
+        Existing Calendar Events for {tomorrow}:
+        {existing_events}
 
         {prompt_content}
         """

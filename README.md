@@ -7,6 +7,7 @@ This Python script transforms your daily planning by integrating **Todoist**, **
 *   **🧠 Smart Daily Planning:** Automatically fetches overdue and due-today tasks from Todoist and schedules them into your Google Calendar.
 *   **🗓️ Context-Aware Scheduling:** Checks your existing calendar events to ensure zero conflicts. It respects your time and works *around* your schedule.
 *   **⏰ Personalized Routines:** Takes your personal habits (wake-up time, meal times, work hours) into account to create a realistic and sustainable plan.
+*   **👥 Multi-User Support:** Can manage schedules for multiple users in a single run, each with their own Todoist account, Calendar, and preferences.
 *   **🤖 Powered by Google Gemini:** Uses Google's advanced AI models to prioritize tasks, estimate durations, and make intelligent scheduling decisions.
 *   **📝 Rich Event Descriptions:** Generates detailed calendar event descriptions that include:
     *   **Value Proposition:** Why this task is important.
@@ -20,7 +21,7 @@ This Python script transforms your daily planning by integrating **Todoist**, **
 
 1.  **Python 3.9+** installed.
 2.  **Google Cloud Project** with **Google Calendar API** enabled.
-3.  **Todoist Account**.
+3.  **Todoist Account** (per user).
 4.  **Google Gemini API Key**.
 
 ## Setup
@@ -41,16 +42,25 @@ You need to create a `credentials.json` file in the root directory. A template `
 
 ```json
 {
-    "todoist": {
-        "api_key": "YOUR_TODOIST_API_KEY"
-    },
     "gemini": {
         "api_key": "YOUR_GEMINI_API_KEY"
     },
     "google_calendar": {
         "client_secret_file": "client_secret.json",
         "scopes": ["https://www.googleapis.com/auth/calendar"]
-    }
+    },
+    "users": [
+        {
+            "user_id": "user1",
+            "todoist_api_key": "USER1_TODOIST_API_KEY",
+            "personal_scheduling_preferences": "Here are rules that you should follow when scheduling my days:\n1. Everyday from 8am - 9:20am, I wake up, workout, eat breakfast, and do chores.\nThe chores I do in this timeslot are usually daily chores which I won't bother you with scheduling.\nHowever, there are sometimes recurring chores that pop up in potential tasks.\nFeel free to put some of those into this time slot for me.\n2. If it is the weekend, please note that I like to eat lunch from 1pm-1:30pm.\n3. If it is a workday, please note that I will be busy from 9:20am - 5pm doing work.\n4. I would like to eat dinner from 6:30pm-7:30pm. Please block off this time.\n6. From 10:00pm-8am I am resting. Do not scheduling during this time period."
+        },
+        {
+            "user_id": "user2",
+            "todoist_api_key": "USER2_TODOIST_API_KEY",
+            "personal_scheduling_preferences": "1. Wake up at 6am. 2. Gym 7-8. 3. Work 9-6."
+        }
+    ]
 }
 ```
 
@@ -84,7 +94,7 @@ Run the script:
 python main.py
 ```
 
-**Important:** The first time you run the script, a browser window will open asking you to log in to your Google account and authorize access to your calendar. This will generate a `token.json` file for future authentication.
+**Important:** The first time you run the script, it will iterate through each configured user. For each user, a browser window will open asking you to log in to the corresponding Google account and authorize access to the calendar. This will generate a `token_<user_id>.json` file for each user to persist authentication.
 
 ## Usage
 
@@ -95,5 +105,5 @@ It is recommended to run this script once a day (e.g., in the evening) to plan f
 
 ## Customization
 
-*   **Preferences**: You can modify `PERSONAL_SCHEDULING_PREFERENCES` in `main.py` to adjust your daily routine, work hours, and meal times.
+*   **Preferences**: Personal scheduling preferences are now defined in `credentials.json` for each user.
 *   **Model**: The script is configured to use `gemini-2.5-pro`. You can change this in `src/gemini_manager.py` if needed.

@@ -22,8 +22,8 @@ Potential Tasks: This is a list of potential tasks that I'd like to get done som
 Is today the day? That is for you to figure out. Here are some rule of thumb things to consider.
 It is optimal to do the highest priority tasks first that will yield the most benefit to me.
 That being said, it is also optimal to fit tasks into convenient time slots where they complement my day.
-Keep your eye out for tasks that group together really well into a single timeslot. Sometimes tasks come with a datetime.
-Only use the datetime here to determine the time of day I prefer doing this task if applicable.
+Keep your eye out for tasks that group together really well into a single timeslot. Sometimes tasks come with a time.
+This time is the preferred time of day I like doing this task, but it is also just a suggestion. Trust your prioritizaiton and scheduling skills.
 
 With all this information you will have enough context to start making decisions. Here are some extra instructions you should try to follow.
 You will need to calculate how long you think tasks take in order to effectively make this schedule.

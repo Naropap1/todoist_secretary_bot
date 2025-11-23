@@ -8,7 +8,7 @@ from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
-# If modifying these scopes, delete the file token.json.
+# If modifying these scopes, delete the generated token file(s).
 SCOPES = ["https://www.googleapis.com/auth/calendar"]
 
 

@@ -2,6 +2,7 @@
 credentials.json
 client_secret.json
 token.json
+tokens/
 
 # Python
 __pycache__/

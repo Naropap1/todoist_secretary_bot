@@ -28,22 +28,6 @@ def main():
     calendar_config = config.get("google_calendar", {})
     users = config.get("users", [])
 
-    # Backward compatibility check: if no users list, but top level todoist exists
-    if not users and config.get("todoist"):
-        print(
-            "Warning: Old configuration format detected. Please migrate to the new format."
-        )
-        # Create a dummy user from old config
-        users = [
-            {
-                "user_id": "default_user",
-                "todoist_api_key": config.get("todoist", {}).get("api_key"),
-                # We can't easily recover the hardcoded preferences from the old main.py if they aren't in config.
-                # But for now, let's assume the user updates the config as requested.
-                "personal_scheduling_preferences": "Please update your config to include preferences.",
-            }
-        ]
-
     if not gemini_api_key:
         print("Error: Missing Gemini API key in credentials.json")
         sys.exit(1)

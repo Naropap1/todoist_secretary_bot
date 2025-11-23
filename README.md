@@ -53,7 +53,7 @@ You need to create a `credentials.json` file in the root directory. A template `
         {
             "user_id": "user1",
             "todoist_api_key": "USER1_TODOIST_API_KEY",
-            "personal_scheduling_preferences": "1. Wake up at 8am. 2. Work 9-5. 3. Dinner at 7pm."
+            "personal_scheduling_preferences": "Here are rules that you should follow when scheduling my days:\n1. Everyday from 8am - 9:20am, I wake up, workout, eat breakfast, and do chores.\nThe chores I do in this timeslot are usually daily chores which I won't bother you with scheduling.\nHowever, there are sometimes recurring chores that pop up in potential tasks.\nFeel free to put some of those into this time slot for me.\n2. If it is the weekend, please note that I like to eat lunch from 1pm-1:30pm.\n3. If it is a workday, please note that I will be busy from 9:20am - 5pm doing work.\n4. I would like to eat dinner from 6:30pm-7:30pm. Please block off this time.\n6. From 10:00pm-8am I am resting. Do not scheduling during this time period."
         },
         {
             "user_id": "user2",

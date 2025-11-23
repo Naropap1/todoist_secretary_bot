@@ -55,7 +55,7 @@ You need to create a `credentials.json` file in the root directory. A template `
     *   Go to "APIs & Services" > "OAuth consent screen". Configure it (User Type: External, then add your email as a test user).
     *   Go to "APIs & Services" > "Credentials".
     *   Click "Create Credentials" > "OAuth client ID".
-    *   Application type: **Desktop app**.
+    *   Application type: **TVs and Limited Input devices**.
     *   Download the JSON file, rename it to `client_secret.json`, and place it in the root directory of this project.
     *   Navigate to APIs & Services > OAuth consent screen > Audience.
     *   Add any users who will use the service with `+ Add Users`.

@@ -1,8 +1,5 @@
 import os.path
 import datetime
-import requests
-import time
-import json
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -42,25 +39,20 @@ class CalendarManager:
                     # But since this is a local script, printing error is appropriate.
                     return
 
-                print("\nInitiating authentication...")
-                print("Trying Device Flow first (best for remote users)...")
+                print("\nInitiating authentication (Console Flow)...")
+                print("1. Click (or copy) the URL below to open the Google authorization page.")
+                print("2. Log in and allow access.")
+                print("3. You will be given a code. Copy that code and paste it here.")
 
-                creds = self._authenticate_with_device_flow()
-
-                if creds:
-                    self.creds = creds
-                else:
-                    print("\nDevice Flow failed (likely due to client config). Falling back to Console Flow.")
-                    print("Please copy the URL below and send it to the user.")
-                    try:
-                        flow = InstalledAppFlow.from_client_secrets_file(
-                            self.client_secret_file, SCOPES
-                        )
-                        # run_console allows the user to copy-paste the code manually
-                        self.creds = flow.run_console()
-                    except Exception as e:
-                        print(f"Console Flow failed: {e}")
-                        return
+                try:
+                    flow = InstalledAppFlow.from_client_secrets_file(
+                        self.client_secret_file, SCOPES
+                    )
+                    # run_console allows the user to copy-paste the code manually
+                    self.creds = flow.run_console()
+                except Exception as e:
+                    print(f"Console Flow failed: {e}")
+                    return
 
             # Save the credentials for the next run
             with open(self.token_file, "w") as token:
@@ -72,92 +64,6 @@ class CalendarManager:
         except HttpError as error:
             print(f"An error occurred: {error}")
             self.service = None
-
-    def _authenticate_with_device_flow(self):
-        """
-        Authenticates using the OAuth 2.0 Device Flow.
-        Returns:
-            google.oauth2.credentials.Credentials or None if failed.
-        """
-        try:
-            with open(self.client_secret_file, "r") as f:
-                client_config = json.load(f)
-
-            # Handle both "installed" and "web" formats in client_secret.json
-            config = client_config.get("installed") or client_config.get("web")
-            if not config:
-                print("Error: Invalid client_secret.json format.")
-                return None
-
-            client_id = config["client_id"]
-            client_secret = config["client_secret"]
-
-            # 1. Request a device code
-            device_code_url = "https://oauth2.googleapis.com/device/code"
-            response = requests.post(device_code_url, data={
-                "client_id": client_id,
-                "scope": " ".join(SCOPES)
-            })
-
-            if response.status_code != 200:
-                print(f"Device Flow init failed: {response.text}")
-                return None
-
-            data = response.json()
-            device_code = data["device_code"]
-            user_code = data["user_code"]
-            verification_url = data["verification_url"]
-            interval = data.get("interval", 5)
-            expires_in = data.get("expires_in", 1800)
-
-            print(f"\n--- ACTION REQUIRED ---")
-            print(f"1. Send this URL to the user: {verification_url}")
-            print(f"2. Tell them to enter this code: {user_code}")
-            print(f"Waiting for approval... (This script will poll until approved or expired)")
-
-            # 2. Poll for the token
-            token_url = "https://oauth2.googleapis.com/token"
-            start_time = time.time()
-
-            while True:
-                time.sleep(interval)
-
-                if time.time() - start_time > expires_in:
-                    print("Device code expired.")
-                    return None
-
-                response = requests.post(token_url, data={
-                    "client_id": client_id,
-                    "client_secret": client_secret,
-                    "device_code": device_code,
-                    "grant_type": "urn:ietf:params:oauth:grant-type:device_code"
-                })
-
-                if response.status_code == 200:
-                    token_data = response.json()
-                    # Construct Credentials object
-                    return Credentials(
-                        token=token_data["access_token"],
-                        refresh_token=token_data.get("refresh_token"),
-                        token_uri=token_url,
-                        client_id=client_id,
-                        client_secret=client_secret,
-                        scopes=SCOPES
-                    )
-
-                error = response.json().get("error")
-                if error == "authorization_pending":
-                    continue
-                elif error == "slow_down":
-                    interval += 5
-                    continue
-                else:
-                    print(f"Error polling for token: {error}")
-                    return None
-
-        except Exception as e:
-            print(f"An unexpected error occurred during Device Flow: {e}")
-            return None
 
     def _get_or_create_secretary_calendar(self):
         """Finds the 'secretary_bot' calendar or creates it if it doesn't exist."""

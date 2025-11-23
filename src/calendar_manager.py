@@ -71,16 +71,23 @@ class CalendarManager:
         if not self.service:
             return "Calendar service not initialized."
 
+        def ensure_timezone(time_str):
+            try:
+                dt = datetime.datetime.fromisoformat(time_str)
+                if dt.tzinfo is None:
+                    dt = dt.astimezone()
+                return dt.isoformat()
+            except ValueError:
+                return time_str
+
         event = {
             "summary": summary,
             "description": description,
             "start": {
-                "dateTime": start_time,
-                "timeZone": "UTC",  # Adjust if needed, or let Gemini specify offset
+                "dateTime": ensure_timezone(start_time),
             },
             "end": {
-                "dateTime": end_time,
-                "timeZone": "UTC",
+                "dateTime": ensure_timezone(end_time),
             },
         }
 

@@ -4,6 +4,7 @@ from src.calendar_manager import CalendarManager
 import datetime
 import time
 import logging
+import re
 
 SECRETARY_PROMPT = """
 Current Date: {today}
@@ -82,7 +83,7 @@ class GeminiManager:
         )
 
         max_retries = 5
-        base_delay = 2
+        base_delay = 90  # Increased to 90 seconds (1.5 minutes) to avoid rate limits
 
         for attempt in range(max_retries):
             try:
@@ -99,6 +100,34 @@ class GeminiManager:
                     if attempt < max_retries - 1:
                         sleep_time = base_delay * (2 ** attempt)
                         logging.warning(f"Gemini is overloaded. Retrying in {sleep_time} seconds... (Attempt {attempt + 1}/{max_retries})")
+                        time.sleep(sleep_time)
+                        continue
+
+                # Check for 429 RESOURCE_EXHAUSTED
+                if "429" in error_msg or "RESOURCE_EXHAUSTED" in error_msg:
+                    if attempt < max_retries - 1:
+                        # Try to find the retry delay in the error message
+                        # Look for 'retryDelay': '17s' or similar
+                        delay_match = re.search(r"retryDelay':\s*'([\d\.]+)s'", error_msg)
+                        if not delay_match:
+                             # Try looking for "Please retry in 17.501247704s."
+                             delay_match = re.search(r"retry in ([\d\.]+)s", error_msg)
+
+                        if delay_match:
+                            try:
+                                retry_delay = float(delay_match.group(1))
+                                # Add a small buffer just in case
+                                sleep_time = retry_delay + 1.0
+                            except ValueError:
+                                sleep_time = base_delay * (2 ** attempt)
+                        else:
+                            sleep_time = base_delay * (2 ** attempt)
+
+                        # Ensure we wait at least the base delay (1.5 minutes) to be safe against quota limits
+                        if sleep_time < base_delay:
+                            sleep_time = base_delay
+
+                        logging.warning(f"Gemini quota exceeded. Retrying in {sleep_time:.2f} seconds... (Attempt {attempt + 1}/{max_retries})")
                         time.sleep(sleep_time)
                         continue
 

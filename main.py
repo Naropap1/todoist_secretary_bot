@@ -9,10 +9,10 @@ PERSONAL_SCHEDULING_PREFERENCES = """
 Here are rules that you should follow when scheduling my days:
 1. Everyday from 8am - 9:20am, I wake up, workout, eat breakfast, and do chores.
 The chores I do in this timeslot are usually daily chores which I won't bother you with scheduling.
-However, there are sometimes recurring chores that pop up potential chores.
+However, there are sometimes recurring chores that pop up in potential tasks.
 Feel free to put some of those into this time slot for me.
 2. If it is the weekend, please note that I like to eat lunch from 1pm-1:30pm.
-3. If it is a workday, please note that I will be busy from 9-20am - 5pm doing work.
+3. If it is a workday, please note that I will be busy from 9:20am - 5pm doing work.
 4. I would like to eat dinner from 6:30pm-7:30pm. Please block off this time.
 6. From 10:00pm-8am I am resting. Do not scheduling during this time period.
 """

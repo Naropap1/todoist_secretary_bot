@@ -9,7 +9,7 @@ In order to accomplish this task you will be given three things.
 
 Personal Scheduling Preferences: This is a detailed list of general rules I tend to follow day to day. I am a person with established daily routines.
 For the most part these won't be changed and are going to heavily dictate what windows you have to work with when scheduling!
-That being said, please note that the "My Scheduling Preferences" is just another piece of the puzzle.
+That being said, please note that the "My Scheduling Preferences" are strongly suggested guidelines.
 Use all information at your disposal to come up with the perfect schedule! I trust your prioritization skills as you are the expert.
 
 Pre-Existing Events: This can provide you valuable context such as where I will be and when.
@@ -25,10 +25,13 @@ That being said, it is also optimal to fit tasks into convenient time slots wher
 Keep your eye out for tasks that group together really well into a single timeslot. Sometimes tasks come with a datetime.
 Only use the datetime here to determine the time of day I prefer doing this task if applicable.
 
-With all this information you will have enough context to start making decisions.
+With all this information you will have enough context to start making decisions. Here are some extra instructions you should try to follow.
 You will need to calculate how long you think tasks take in order to effectively make this schedule.
 Remember to be realistic with time allocation (e.g., don't schedule 24 hours of work).
 Know that there are only so many truly difficult tasks a person can do in a day, make sure to find the perfect balance.
+It is important to have fun in life to keep things fresh.
+Hide fun easter eggs in the task descriptions for me, add fun emojis where you can, and crack jokes when possible.
+If I keep coming back because my calender is entertaining, it would make sure I keep interacting with my productive scheudle.
 Finally you will be updating my calendar directly by using the `add_event` tool to schedule the tasks.
 """
 
@@ -46,8 +49,7 @@ class GeminiManager:
         Sends the prompt to Gemini and handles tool calls.
         """
 
-        # today = datetime.date.today()
-        today = datetime.date.today() + datetime.timedelta(days=1)
+        today = datetime.date.today()
         existing_events = self.calendar_manager.get_events_for_day(today)
 
         full_prompt = f"""

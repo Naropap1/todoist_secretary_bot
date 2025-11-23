@@ -81,12 +81,12 @@ You need to create a `credentials.json` file in the root directory. A template `
     *   Go to "APIs & Services" > "OAuth consent screen". Configure it (User Type: External, then add your email as a test user).
     *   Go to "APIs & Services" > "Credentials".
     *   Click "Create Credentials" > "OAuth client ID".
-    *   Application type: **Desktop app**.
+    *   Application type: **Desktop app** (or **TVs and Limited Input devices** for better Device Flow support).
     *   Download the JSON file, rename it to `client_secret.json`, and place it in the root directory of this project.
     *   Navigate to APIs & Services > OAuth consent screen > Audience.
     *   Add any users who will use the service with `+ Add Users`.
 
-### 3. First Run
+### 3. First Run & Adding Users
 
 Run the script:
 
@@ -94,7 +94,22 @@ Run the script:
 python main.py
 ```
 
-**Important:** The first time you run the script, it will iterate through each configured user. For each user, a browser window will open asking you to log in to the corresponding Google account and authorize access to the calendar. This will generate a `token_<user_id>.json` file for each user to persist authentication.
+**New User Authentication (Device Flow):**
+
+When adding a new user (or running for the first time), the script will attempt to use the **Device Authorization Flow**. This is ideal if the user is not physically present at the computer running the script.
+
+1.  The console will display a **URL** (e.g., `https://google.com/device`) and a **User Code** (e.g., `ABCD-1234`).
+2.  Send this URL and Code to the user.
+3.  The user visits the URL on their own device, enters the code, and authorizes the application.
+4.  Once they approve, the script automatically detects the completion and saves the `token_<user_id>.json` file.
+
+**Fallback:**
+
+If your Google Cloud Project configuration blocks the Device Flow (e.g., `invalid_client` error), the script will automatically fallback to the **Console Flow**.
+*   It will print a long URL.
+*   Send this URL to the user.
+*   They visit it, authorize, and get a code.
+*   They send the code back to you, and you paste it into the terminal.
 
 ## Usage
 

@@ -11,7 +11,10 @@ class TodoistManager:
         try:
             # Fetch tasks with filter 'overdue | today'
             # Note: The python wrapper get_tasks(filter=...) allows filtering.
-            tasks = self.api.get_tasks(filter='overdue | today')
+            tasks_pages = self.api.filter_tasks(query='overdue | today')
+            tasks = []
+            for page in tasks_pages:
+                tasks.extend(page)
 
             if not tasks:
                 return "No overdue or due today tasks found."

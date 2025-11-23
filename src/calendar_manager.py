@@ -1,8 +1,10 @@
 import os.path
 import datetime
+import json
+import time
+import requests
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
@@ -39,19 +41,11 @@ class CalendarManager:
                     # But since this is a local script, printing error is appropriate.
                     return
 
-                print("\nInitiating authentication (Console Flow)...")
-                print("1. Click (or copy) the URL below to open the Google authorization page.")
-                print("2. Log in and allow access.")
-                print("3. You will be given a code. Copy that code and paste it here.")
-
+                print("\nInitiating authentication (Device Flow)...")
                 try:
-                    flow = InstalledAppFlow.from_client_secrets_file(
-                        self.client_secret_file, SCOPES
-                    )
-                    # run_console allows the user to copy-paste the code manually
-                    self.creds = flow.run_console()
+                    self.creds = self.authenticate_device_flow(SCOPES)
                 except Exception as e:
-                    print(f"Console Flow failed: {e}")
+                    print(f"Device Flow failed: {e}")
                     return
 
             # Save the credentials for the next run
@@ -64,6 +58,79 @@ class CalendarManager:
         except HttpError as error:
             print(f"An error occurred: {error}")
             self.service = None
+
+    def authenticate_device_flow(self, scopes):
+        """
+        Authenticates the user using the OAuth 2.0 Device Authorization Flow.
+        """
+        # Load client secrets
+        with open(self.client_secret_file, "r") as f:
+            data = json.load(f)
+
+        # Determine if 'installed' or 'web'
+        if "installed" in data:
+            config = data["installed"]
+        elif "web" in data:
+            config = data["web"]
+        else:
+            raise ValueError("Client secret file has unknown format.")
+
+        client_id = config["client_id"]
+        client_secret = config["client_secret"]
+        token_uri = config.get("token_uri", "https://oauth2.googleapis.com/token")
+
+        # 1. Request device code
+        device_code_url = "https://oauth2.googleapis.com/device/code"
+        response = requests.post(
+            device_code_url,
+            data={"client_id": client_id, "scope": " ".join(scopes)},
+        )
+        response.raise_for_status()
+        data = response.json()
+
+        device_code = data["device_code"]
+        user_code = data["user_code"]
+        verification_url = data["verification_url"]
+        interval = data.get("interval", 5)
+
+        print(f"\nTo authorize this application, visit this URL:\n{verification_url}")
+        print(f"\nAnd enter the code:\n{user_code}\n")
+
+        # 2. Poll for token
+        while True:
+            time.sleep(interval)
+            resp = requests.post(
+                token_uri,
+                data={
+                    "client_id": client_id,
+                    "client_secret": client_secret,
+                    "device_code": device_code,
+                    "grant_type": "urn:ietf:params:oauth:grant-type:device_code",
+                },
+            )
+
+            if resp.status_code == 200:
+                token_data = resp.json()
+                return Credentials(
+                    token=token_data["access_token"],
+                    refresh_token=token_data.get("refresh_token"),
+                    token_uri=token_uri,
+                    client_id=client_id,
+                    client_secret=client_secret,
+                    scopes=scopes,
+                )
+
+            error = resp.json().get("error")
+            if error == "authorization_pending":
+                continue
+            elif error == "slow_down":
+                interval += 5
+            elif error == "expired_token":
+                raise Exception(
+                    "Device code expired. Please restart the authentication."
+                )
+            else:
+                raise Exception(f"Failed to get token: {error}")
 
     def _get_or_create_secretary_calendar(self):
         """Finds the 'secretary_bot' calendar or creates it if it doesn't exist."""

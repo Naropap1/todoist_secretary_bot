@@ -2,6 +2,8 @@ from google import genai
 from google.genai import types
 from src.calendar_manager import CalendarManager
 import datetime
+import time
+import logging
 
 SECRETARY_PROMPT = """
 Current Date: {today}
@@ -79,12 +81,26 @@ class GeminiManager:
             potential_tasks=potential_tasks,
         )
 
-        try:
-            chat = self.client.chats.create(
-                model="gemini-2.5-pro",
-                config=types.GenerateContentConfig(tools=self.tools),
-            )
-            response = chat.send_message(full_prompt)
-            return response.text
-        except Exception as e:
-            return f"Error interacting with Gemini: {e}"
+        max_retries = 5
+        base_delay = 2
+
+        for attempt in range(max_retries):
+            try:
+                chat = self.client.chats.create(
+                    model="gemini-2.5-pro",
+                    config=types.GenerateContentConfig(tools=self.tools),
+                )
+                response = chat.send_message(full_prompt)
+                return response.text
+            except Exception as e:
+                error_msg = str(e)
+                # Check for 503 UNAVAILABLE or overloaded message
+                if "503" in error_msg or "overloaded" in error_msg.lower():
+                    if attempt < max_retries - 1:
+                        sleep_time = base_delay * (2 ** attempt)
+                        logging.warning(f"Gemini is overloaded. Retrying in {sleep_time} seconds... (Attempt {attempt + 1}/{max_retries})")
+                        time.sleep(sleep_time)
+                        continue
+
+                # If it's not a retryable error or we've exhausted retries
+                return f"Error interacting with Gemini: {e}"

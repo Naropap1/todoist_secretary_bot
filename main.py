@@ -1,3 +1,4 @@
+import argparse
 import json
 import os
 import sys
@@ -19,6 +20,14 @@ def load_config(config_path="credentials.json"):
 
 
 def main():
+    parser = argparse.ArgumentParser(description="Personal Assistant Script")
+    parser.add_argument(
+        "--test",
+        action="store_true",
+        help="Run in test mode (process only the first user)",
+    )
+    args = parser.parse_args()
+
     print("Starting Personal Assistant Script...")
 
     # 1. Load Credentials
@@ -37,6 +46,10 @@ def main():
         sys.exit(1)
 
     print(f"Found {len(users)} users to process.")
+
+    if args.test:
+        print("TEST MODE ENABLED: Only the first user will be processed.")
+        users = users[:1]
 
     for user in users:
         user_id = user.get("user_id", "unknown_user")

@@ -26,6 +26,11 @@ def main():
         action="store_true",
         help="Run in test mode (process only the first user)",
     )
+    parser.add_argument(
+        "--no_export",
+        action="store_true",
+        help="Turns off export to google calendar",
+    )
     args = parser.parse_args()
 
     print("Starting Personal Assistant Script...")
@@ -101,8 +106,10 @@ def main():
         print(f"Potential Tasks:\n{potential_tasks}")
 
         # 5. Call Gemini to process and update calendar if this is not a test run
-        if args.test:
-            print("Skipping Gemini manager steps, but here is the final prompt:")
+        if args.no_export:
+            print(
+                "Skipping exporting to google calendar, but here is the final prompt:"
+            )
             print(
                 gemini_manager.generate_full_prompt(
                     personal_scheduling_preferences, potential_tasks

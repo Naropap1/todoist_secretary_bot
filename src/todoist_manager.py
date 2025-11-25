@@ -35,7 +35,13 @@ class TodoistManager:
             if fav_projects:
                 fav_query_parts = []
                 for p in fav_projects:
-                    safe_name = self._sanitize_project_name(p.name)
+                    # Escape special characters in project name for filter query
+                    # Spaces must be escaped as "\ "
+                    safe_name = p.name.replace(" ", r"\ ")
+                    # Parentheses and other special chars might need escaping too,
+                    # but spaces are the primary concern documented.
+                    # Documented specials: & | ! ( )
+                    safe_name = safe_name.replace("(", r"\(").replace(")", r"\)").replace("&", r"\&").replace("|", r"\|").replace("!", r"\!")
                     fav_query_parts.append(f"#{safe_name}")
 
                 if fav_query_parts:
@@ -47,32 +53,11 @@ class TodoistManager:
             tasks = []
             seen_task_ids = set()
 
-            # Helper to process a potential list of tasks
-            def process_task_list(task_list):
-                for task in task_list:
-                    # Defensive check: ensure task is an object with an id
-                    if hasattr(task, 'id') and task.id not in seen_task_ids:
+            for page in tasks_pages:
+                for task in page:
+                    if task.id not in seen_task_ids:
                         tasks.append(task)
                         seen_task_ids.add(task.id)
-
-            # Handle both paginated (list of lists) and flat (list of tasks) returns
-            # logic based on observation of 'list object has no attribute id' error
-            # which implies we might have iterated over a Task object's fields if we treated a flat list as pages.
-
-            # Check if tasks_pages is a Paginator or Iterator.
-            # We iterate it.
-            for item in tasks_pages:
-                if isinstance(item, list):
-                    # It's a page (list of tasks)
-                    process_task_list(item)
-                elif hasattr(item, 'id'):
-                    # It's a single Task object (unexpected but handles the "flat list" hypothesis)
-                    if item.id not in seen_task_ids:
-                        tasks.append(item)
-                        seen_task_ids.add(item.id)
-                else:
-                    # Unknown item type, log or skip
-                    print(f"Warning: Unexpected item type in tasks_pages: {type(item)}")
 
             if not tasks:
                 return "No overdue or due today tasks found."

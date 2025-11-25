@@ -8,10 +8,10 @@ class TodoistManager:
 
     def get_potential_tasks(self):
         """
-        Fetches overdue and due today tasks and returns a potential tasks string.
+        Fetches overdue, due today, and inbox tasks with no due date.
         """
         try:
-            tasks_pages = self.api.filter_tasks(query="overdue | today")
+            tasks_pages = self.api.filter_tasks(query="overdue | today | (no date & #Inbox)")
             tasks = []
             for page in tasks_pages:
                 tasks.extend(page)

@@ -22,6 +22,8 @@ class TodoistManager:
             potential_tasks = ""
             for task in tasks:
                 potential_tasks += f"- {task.content}"
+                if task.description:
+                    potential_tasks += f" ({task.description})"
                 if task.due:
                     formatted_time = task.due.date.strftime("%I:%M %p")
                     if formatted_time != "12:00 AM":

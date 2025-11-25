@@ -96,8 +96,8 @@ class TestTodoistManager(unittest.TestCase):
 
         # Verify output format
         self.assertIn("- Inbox Task", result)
-        self.assertIn("- [Work Project] Work Task", result)
-        self.assertIn("- [Shopping List] Buy Milk", result)
+        self.assertIn("- Work Task", result)
+        self.assertIn("- Buy Milk", result)
 
     def test_deduplication(self):
         mock_p1 = MagicMock()
@@ -119,7 +119,7 @@ class TestTodoistManager(unittest.TestCase):
         result = self.manager.get_potential_tasks()
 
         # Should only appear once
-        count = result.count("- [P1] Task 1")
+        count = result.count("- Task 1")
         self.assertEqual(count, 1)
 
 if __name__ == '__main__':

@@ -77,7 +77,6 @@ class TodoistManager:
                     else:
                          pass # Might be unexpected object, but ignore safely
 
-            project_map = {p.id: p.name for p in valid_projects}
             fav_projects = [p for p in valid_projects if getattr(p, 'is_favorite', False)]
 
             # Base query
@@ -113,12 +112,7 @@ class TodoistManager:
 
             potential_tasks = ""
             for task in tasks:
-                # Prepend project name
-                project_name = project_map.get(task.project_id, "Unknown Project")
-                if project_name == "Inbox":
-                    potential_tasks += f"- {task.content}"
-                else:
-                    potential_tasks += f"- [{project_name}] {task.content}"
+                potential_tasks += f"- {task.content}"
 
                 if task.description:
                     potential_tasks += f" ({task.description})"

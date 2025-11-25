@@ -6,6 +6,17 @@ class TodoistManager:
     def __init__(self, api_key):
         self.api = TodoistAPI(api_key)
 
+    def _sanitize_project_name(self, name: str) -> str:
+        """
+        Escapes special characters in a project name for use in a Todoist filter query.
+        """
+        # Spaces must be escaped as "\ "
+        safe_name = name.replace(" ", r"\ ")
+        # Escape other special characters used in filters
+        # Documented specials: & | ! ( )
+        safe_name = safe_name.replace("(", r"\(").replace(")", r"\)").replace("&", r"\&").replace("|", r"\|").replace("!", r"\!")
+        return safe_name
+
     def get_potential_tasks(self):
         """
         Fetches overdue, due today, and inbox tasks with no due date.

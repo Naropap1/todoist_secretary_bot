@@ -24,7 +24,19 @@ class TodoistManager:
         """
         try:
             # Fetch all projects to identify favorites and map IDs to names
-            projects = self.api.get_projects()
+            projects_data = self.api.get_projects()
+
+            # Handle potential pagination (list of lists) or flat list
+            projects = []
+            if isinstance(projects_data, list):
+                for item in projects_data:
+                    if isinstance(item, list):
+                        projects.extend(item)
+                    else:
+                        projects.append(item)
+            else:
+                projects = list(projects_data)
+
             project_map = {p.id: p.name for p in projects}
             fav_projects = [p for p in projects if p.is_favorite]
 
@@ -49,15 +61,26 @@ class TodoistManager:
                     # Add to main query: OR (assigned to me & no date & (Fav1 | Fav2 ...))
                     query += f" | (assigned to: me & no date & ({fav_query_string}))"
 
-            tasks_pages = self.api.filter_tasks(query=query)
+            tasks_data = self.api.filter_tasks(query=query)
+
+            # Handle potential pagination (list of lists) or flat list for tasks
+            all_tasks = []
+            if isinstance(tasks_data, list):
+                for item in tasks_data:
+                    if isinstance(item, list):
+                        all_tasks.extend(item)
+                    else:
+                        all_tasks.append(item)
+            else:
+                all_tasks = list(tasks_data)
+
             tasks = []
             seen_task_ids = set()
 
-            for page in tasks_pages:
-                for task in page:
-                    if task.id not in seen_task_ids:
-                        tasks.append(task)
-                        seen_task_ids.add(task.id)
+            for task in all_tasks:
+                if task.id not in seen_task_ids:
+                    tasks.append(task)
+                    seen_task_ids.add(task.id)
 
             if not tasks:
                 return "No overdue or due today tasks found."

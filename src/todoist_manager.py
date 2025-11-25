@@ -6,22 +6,83 @@ class TodoistManager:
     def __init__(self, api_key):
         self.api = TodoistAPI(api_key)
 
+    def _sanitize_project_name(self, name: str) -> str:
+        """
+        Escapes special characters in a project name for use in a Todoist filter query.
+        """
+        # Spaces must be escaped as "\ "
+        safe_name = name.replace(" ", r"\ ")
+        # Escape other special characters used in filters
+        # Documented specials: & | ! ( )
+        safe_name = safe_name.replace("(", r"\(").replace(")", r"\)").replace("&", r"\&").replace("|", r"\|").replace("!", r"\!")
+        return safe_name
+
     def get_potential_tasks(self):
         """
         Fetches overdue, due today, and inbox tasks with no due date.
+        Also includes tasks from favorited projects that are assigned to the user and have no due date.
         """
         try:
-            tasks_pages = self.api.filter_tasks(query="overdue | today | (no date & #Inbox)")
+            # Fetch all projects to identify favorites and map IDs to names
+            projects = self.api.get_projects()
+            project_map = {p.id: p.name for p in projects}
+            fav_projects = [p for p in projects if p.is_favorite]
+
+            # Base query
+            query = "overdue | today | (no date & #Inbox)"
+
+            # Add favorited projects to query
+            if fav_projects:
+                fav_query_parts = []
+                for p in fav_projects:
+                    safe_name = self._sanitize_project_name(p.name)
+                    fav_query_parts.append(f"#{safe_name}")
+
+                if fav_query_parts:
+                    fav_query_string = " | ".join(fav_query_parts)
+                    # Add to main query: OR (assigned to me & no date & (Fav1 | Fav2 ...))
+                    query += f" | (assigned to: me & no date & ({fav_query_string}))"
+
+            tasks_pages = self.api.filter_tasks(query=query)
             tasks = []
-            for page in tasks_pages:
-                tasks.extend(page)
+            seen_task_ids = set()
+
+            # Helper to process a potential list of tasks
+            def process_task_list(task_list):
+                for task in task_list:
+                    # Defensive check: ensure task is an object with an id
+                    if hasattr(task, 'id') and task.id not in seen_task_ids:
+                        tasks.append(task)
+                        seen_task_ids.add(task.id)
+
+            # Handle both paginated (list of lists) and flat (list of tasks) returns
+            # logic based on observation of 'list object has no attribute id' error
+            # which implies we might have iterated over a Task object's fields if we treated a flat list as pages.
+
+            # Check if tasks_pages is a Paginator or Iterator.
+            # We iterate it.
+            for item in tasks_pages:
+                if isinstance(item, list):
+                    # It's a page (list of tasks)
+                    process_task_list(item)
+                elif hasattr(item, 'id'):
+                    # It's a single Task object (unexpected but handles the "flat list" hypothesis)
+                    if item.id not in seen_task_ids:
+                        tasks.append(item)
+                        seen_task_ids.add(item.id)
+                else:
+                    # Unknown item type, log or skip
+                    print(f"Warning: Unexpected item type in tasks_pages: {type(item)}")
 
             if not tasks:
                 return "No overdue or due today tasks found."
 
             potential_tasks = ""
             for task in tasks:
-                potential_tasks += f"- {task.content}"
+                # Prepend project name
+                project_name = project_map.get(task.project_id, "Unknown Project")
+                potential_tasks += f"- [{project_name}] {task.content}"
+
                 if task.description:
                     potential_tasks += f" ({task.description})"
                 if task.due:

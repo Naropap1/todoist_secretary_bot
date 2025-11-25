@@ -79,5 +79,7 @@ class TodoistManager:
             return potential_tasks
 
         except Exception as error:
+            import traceback
+            traceback.print_exc()
             print(f"Error fetching tasks from Todoist: {error}")
             return f"Error fetching tasks from Todoist: {error}"

@@ -28,7 +28,9 @@ Is today the day? That is for you to figure out. Here are some rule of thumb thi
 It is optimal to do the highest priority tasks first that will yield the most benefit to me.
 That being said, it is also optimal to fit tasks into convenient time slots where they complement my day.
 Keep your eye out for tasks that group together really well into a single timeslot. Sometimes tasks come with a time.
-This time is the preferred time of day I like doing this task, but it is also just a suggestion. Trust your prioritizaiton and scheduling skills.
+This time is the preferred time of day I like doing this task, but it is also just a suggestion.
+Some tasks may have descriptions enclosed in parenthesis, and these descriptions provide important context for scheduling decisions.
+Trust your prioritizaiton and scheduling skills.
 
 With all this information you will have enough context to start making decisions. Here are some extra instructions you should try to follow.
 You will need to calculate how long you think tasks take in order to effectively make this schedule.

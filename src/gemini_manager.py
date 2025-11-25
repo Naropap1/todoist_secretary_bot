@@ -69,19 +69,22 @@ class GeminiManager:
         # Define the tools that Gemini can use
         self.tools = [self.calendar_manager.add_event]
 
-    def generate_and_execute(self, personal_scheduling_preferences, potential_tasks):
-        """
-        Sends the prompt to Gemini and handles tool calls.
-        """
-
+    def generate_full_prompt(self, personal_scheduling_preferences, potential_tasks):
         today = datetime.date.today()
         existing_events = self.calendar_manager.get_events_for_day(today)
-
-        full_prompt = SECRETARY_PROMPT.format(
+        return SECRETARY_PROMPT.format(
             today=today,
             existing_events=existing_events,
             personal_scheduling_preferences=personal_scheduling_preferences,
             potential_tasks=potential_tasks,
+        )
+
+    def generate_and_execute(self, personal_scheduling_preferences, potential_tasks):
+        """
+        Sends the prompt to Gemini and handles tool calls.
+        """
+        full_prompt = self.generate_full_prompt(
+            personal_scheduling_preferences, potential_tasks
         )
 
         max_retries = 5
@@ -100,8 +103,10 @@ class GeminiManager:
                 # Check for 503 UNAVAILABLE or overloaded message
                 if "503" in error_msg or "overloaded" in error_msg.lower():
                     if attempt < max_retries - 1:
-                        sleep_time = base_delay * (2 ** attempt)
-                        logging.warning(f"Gemini is overloaded. Retrying in {sleep_time} seconds... (Attempt {attempt + 1}/{max_retries})")
+                        sleep_time = base_delay * (2**attempt)
+                        logging.warning(
+                            f"Gemini is overloaded. Retrying in {sleep_time} seconds... (Attempt {attempt + 1}/{max_retries})"
+                        )
                         time.sleep(sleep_time)
                         continue
 
@@ -110,10 +115,12 @@ class GeminiManager:
                     if attempt < max_retries - 1:
                         # Try to find the retry delay in the error message
                         # Look for 'retryDelay': '17s' or similar
-                        delay_match = re.search(r"retryDelay':\s*'([\d\.]+)s'", error_msg)
+                        delay_match = re.search(
+                            r"retryDelay':\s*'([\d\.]+)s'", error_msg
+                        )
                         if not delay_match:
-                             # Try looking for "Please retry in 17.501247704s."
-                             delay_match = re.search(r"retry in ([\d\.]+)s", error_msg)
+                            # Try looking for "Please retry in 17.501247704s."
+                            delay_match = re.search(r"retry in ([\d\.]+)s", error_msg)
 
                         if delay_match:
                             try:
@@ -121,15 +128,17 @@ class GeminiManager:
                                 # Add a small buffer just in case
                                 sleep_time = retry_delay + 1.0
                             except ValueError:
-                                sleep_time = base_delay * (2 ** attempt)
+                                sleep_time = base_delay * (2**attempt)
                         else:
-                            sleep_time = base_delay * (2 ** attempt)
+                            sleep_time = base_delay * (2**attempt)
 
                         # Ensure we wait at least the base delay (1.5 minutes) to be safe against quota limits
                         if sleep_time < base_delay:
                             sleep_time = base_delay
 
-                        logging.warning(f"Gemini quota exceeded. Retrying in {sleep_time:.2f} seconds... (Attempt {attempt + 1}/{max_retries})")
+                        logging.warning(
+                            f"Gemini quota exceeded. Retrying in {sleep_time:.2f} seconds... (Attempt {attempt + 1}/{max_retries})"
+                        )
                         time.sleep(sleep_time)
                         continue
 

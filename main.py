@@ -63,15 +63,15 @@ def main():
         print(f"\n=== Processing User: {user_id} ===")
 
         todoist_api_key = user.get("todoist_api_key")
-        personal_preferences = user.get("personal_scheduling_preferences")
+        personal_scheduling_preferences = user.get("personal_scheduling_preferences")
 
         if not todoist_api_key:
             print(f"Skipping user {user_id}: Missing Todoist API key.")
             continue
 
-        if not personal_preferences:
+        if not personal_scheduling_preferences:
             print(f"Warning: User {user_id} has no personal scheduling preferences.")
-            personal_preferences = ""
+            personal_scheduling_preferences = ""
 
         # 2. Initialize Managers for this user
         print(f"Initializing services for {user_id}...")
@@ -100,11 +100,20 @@ def main():
         potential_tasks = todoist_manager.get_potential_tasks()
         print(f"Potential Tasks:\n{potential_tasks}")
 
-        # 5. Call Gemini to process and update calendar
+        # 5. Call Gemini to process and update calendar if this is not a test run
+        if args.test:
+            print("Skipping Gemini manager steps, but here is the final prompt:")
+            print(
+                gemini_manager.generate_full_prompt(
+                    personal_scheduling_preferences, potential_tasks
+                )
+            )
+            continue
+
         print(f"Consulting Gemini and updating calendar for {user_id}...")
         try:
             result = gemini_manager.generate_and_execute(
-                personal_preferences, potential_tasks
+                personal_scheduling_preferences, potential_tasks
             )
             print(f"\n--- Gemini Response for {user_id} ---")
             print(result)

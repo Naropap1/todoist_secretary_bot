@@ -33,7 +33,7 @@ class TestTodoistManager(unittest.TestCase):
         self.manager.api.filter_tasks.assert_called_with(query="overdue | today | (no date & #Inbox)")
 
         # Verify output format
-        self.assertIn("- [Inbox] Task 1 (Desc)", result)
+        self.assertIn("- Task 1 (Desc)", result)
 
     def test_get_potential_tasks_with_favorites(self):
         # Mock Projects
@@ -95,7 +95,7 @@ class TestTodoistManager(unittest.TestCase):
         self.assertIn(r"#Shopping\ List", query_arg)
 
         # Verify output format
-        self.assertIn("- [Inbox] Inbox Task", result)
+        self.assertIn("- Inbox Task", result)
         self.assertIn("- [Work Project] Work Task", result)
         self.assertIn("- [Shopping List] Buy Milk", result)
 

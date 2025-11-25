@@ -115,7 +115,10 @@ class TodoistManager:
             for task in tasks:
                 # Prepend project name
                 project_name = project_map.get(task.project_id, "Unknown Project")
-                potential_tasks += f"- [{project_name}] {task.content}"
+                if project_name == "Inbox":
+                    potential_tasks += f"- {task.content}"
+                else:
+                    potential_tasks += f"- [{project_name}] {task.content}"
 
                 if task.description:
                     potential_tasks += f" ({task.description})"

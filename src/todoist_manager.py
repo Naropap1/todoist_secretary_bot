@@ -9,19 +9,54 @@ class TodoistManager:
     def get_potential_tasks(self):
         """
         Fetches overdue, due today, and inbox tasks with no due date.
+        Also includes tasks from favorited projects that are assigned to the user and have no due date.
         """
         try:
-            tasks_pages = self.api.filter_tasks(query="overdue | today | (no date & #Inbox)")
+            # Fetch all projects to identify favorites and map IDs to names
+            projects = self.api.get_projects()
+            project_map = {p.id: p.name for p in projects}
+            fav_projects = [p for p in projects if p.is_favorite]
+
+            # Base query
+            query = "overdue | today | (no date & #Inbox)"
+
+            # Add favorited projects to query
+            if fav_projects:
+                fav_query_parts = []
+                for p in fav_projects:
+                    # Escape special characters in project name for filter query
+                    # Spaces must be escaped as "\ "
+                    safe_name = p.name.replace(" ", r"\ ")
+                    # Parentheses and other special chars might need escaping too,
+                    # but spaces are the primary concern documented.
+                    # Documented specials: & | ! ( )
+                    safe_name = safe_name.replace("(", r"\(").replace(")", r"\)").replace("&", r"\&").replace("|", r"\|").replace("!", r"\!")
+                    fav_query_parts.append(f"#{safe_name}")
+
+                if fav_query_parts:
+                    fav_query_string = " | ".join(fav_query_parts)
+                    # Add to main query: OR (assigned to me & no date & (Fav1 | Fav2 ...))
+                    query += f" | (assigned to: me & no date & ({fav_query_string}))"
+
+            tasks_pages = self.api.filter_tasks(query=query)
             tasks = []
+            seen_task_ids = set()
+
             for page in tasks_pages:
-                tasks.extend(page)
+                for task in page:
+                    if task.id not in seen_task_ids:
+                        tasks.append(task)
+                        seen_task_ids.add(task.id)
 
             if not tasks:
                 return "No overdue or due today tasks found."
 
             potential_tasks = ""
             for task in tasks:
-                potential_tasks += f"- {task.content}"
+                # Prepend project name
+                project_name = project_map.get(task.project_id, "Unknown Project")
+                potential_tasks += f"- [{project_name}] {task.content}"
+
                 if task.description:
                     potential_tasks += f" ({task.description})"
                 if task.due:

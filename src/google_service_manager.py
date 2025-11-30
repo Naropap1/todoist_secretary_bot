@@ -3,61 +3,91 @@ import datetime
 import json
 import time
 import requests
+import base64
+from typing import List, Optional
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
-# If modifying these scopes, delete the generated token file(s).
-SCOPES = ["https://www.googleapis.com/auth/calendar"]
 
-
-class CalendarManager:
+class GoogleServiceManager:
     def __init__(
-        self, client_secret_file="client_secret.json", token_file="token.json"
+        self,
+        client_secret_file="client_secret.json",
+        token_file="token.json",
+        services: Optional[List[str]] = None,
     ):
+        """
+        Initializes the GoogleServiceManager.
+
+        Args:
+            client_secret_file (str): Path to the client secret file.
+            token_file (str): Path to the token file.
+            services (List[str]): List of services to initialize (e.g., ["calendar", "gmail"]).
+                                  Defaults to ["calendar"] for backward compatibility.
+        """
         self.creds = None
         self.client_secret_file = client_secret_file
         self.token_file = token_file
-        self.service = None
+        self.services_config = services or ["calendar"]
+        self.services = {}  # Stores initialized service objects (e.g., 'calendar', 'gmail')
         self.bot_calendar_id = None
+
+        # Define scopes based on requested services
+        self.scopes = []
+        if "calendar" in self.services_config:
+            self.scopes.append("https://www.googleapis.com/auth/calendar")
+        if "gmail" in self.services_config:
+            self.scopes.append("https://www.googleapis.com/auth/gmail.readonly")
+
         self.authenticate()
 
     def authenticate(self):
-        """Authenticates the user and creates the service."""
+        """Authenticates the user and creates the requested services."""
         if os.path.exists(self.token_file):
-            self.creds = Credentials.from_authorized_user_file(self.token_file, SCOPES)
+            self.creds = Credentials.from_authorized_user_file(self.token_file, self.scopes)
 
         # If there are no (valid) credentials available, let the user log in.
         if not self.creds or not self.creds.valid:
             if self.creds and self.creds.expired and self.creds.refresh_token:
-                self.creds.refresh(Request())
-            else:
+                try:
+                    self.creds.refresh(Request())
+                except Exception as e:
+                    print(f"Error refreshing token: {e}. Re-authenticating...")
+                    self.creds = None # Force re-auth
+
+            if not self.creds: # Check again if refresh failed
                 if not os.path.exists(self.client_secret_file):
                     print(
                         f"Error: {self.client_secret_file} not found. Please download it from Google Cloud Console."
                     )
-                    # Returning here might cause issues if we proceed to use the service.
-                    # But since this is a local script, printing error is appropriate.
                     return
 
                 print("\nInitiating authentication (Device Flow)...")
                 try:
-                    self.creds = self.authenticate_device_flow(SCOPES)
+                    self.creds = self.authenticate_device_flow(self.scopes)
                 except Exception as e:
                     print(f"Device Flow failed: {e}")
                     return
 
             # Save the credentials for the next run
+            # Ensure the directory exists
+            os.makedirs(os.path.dirname(self.token_file), exist_ok=True)
             with open(self.token_file, "w") as token:
                 token.write(self.creds.to_json())
 
+        # Build services
         try:
-            self.service = build("calendar", "v3", credentials=self.creds)
-            self.bot_calendar_id = self._get_or_create_secretary_calendar()
+            if "calendar" in self.services_config:
+                self.services["calendar"] = build("calendar", "v3", credentials=self.creds)
+                self.bot_calendar_id = self._get_or_create_secretary_calendar()
+
+            if "gmail" in self.services_config:
+                self.services["gmail"] = build("gmail", "v1", credentials=self.creds)
+
         except HttpError as error:
-            print(f"An error occurred: {error}")
-            self.service = None
+            print(f"An error occurred initializing services: {error}")
 
     def authenticate_device_flow(self, scopes):
         """
@@ -132,9 +162,12 @@ class CalendarManager:
             else:
                 raise Exception(f"Failed to get token: {error}")
 
+    # --- Calendar Methods ---
+
     def _get_or_create_secretary_calendar(self):
         """Finds the 'secretary_bot' calendar or creates it if it doesn't exist."""
-        if not self.service:
+        service = self.services.get("calendar")
+        if not service:
             return None
 
         calendar_name = "secretary_bot"
@@ -143,7 +176,7 @@ class CalendarManager:
         page_token = None
         while True:
             calendar_list = (
-                self.service.calendarList().list(pageToken=page_token).execute()
+                service.calendarList().list(pageToken=page_token).execute()
             )
             for calendar_list_entry in calendar_list["items"]:
                 if calendar_list_entry["summary"] == calendar_name:
@@ -155,7 +188,7 @@ class CalendarManager:
         # If not found, create it
         try:
             # Attempt to get primary calendar timezone
-            primary_cal = self.service.calendars().get(calendarId="primary").execute()
+            primary_cal = service.calendars().get(calendarId="primary").execute()
             time_zone = primary_cal.get("timeZone", "UTC")
         except HttpError:
             time_zone = "UTC"
@@ -165,7 +198,7 @@ class CalendarManager:
             "timeZone": time_zone,
         }
 
-        created_calendar = self.service.calendars().insert(body=new_calendar).execute()
+        created_calendar = service.calendars().insert(body=new_calendar).execute()
         return created_calendar["id"]
 
     def add_event(
@@ -183,7 +216,8 @@ class CalendarManager:
         Returns:
             str: The link to the created event or error message.
         """
-        if not self.service:
+        service = self.services.get("calendar")
+        if not service:
             return "Calendar service not initialized."
 
         calendar_id = self.bot_calendar_id or "primary"
@@ -210,7 +244,7 @@ class CalendarManager:
 
         try:
             event = (
-                self.service.events()
+                service.events()
                 .insert(calendarId=calendar_id, body=event)
                 .execute()
             )
@@ -220,7 +254,8 @@ class CalendarManager:
 
     def get_upcoming_events(self, max_results=10):
         """Gets the upcoming events."""
-        if not self.service:
+        service = self.services.get("calendar")
+        if not service:
             return "Calendar service not initialized."
 
         now = datetime.datetime.utcnow().isoformat() + "Z"  # 'Z' indicates UTC time
@@ -232,7 +267,7 @@ class CalendarManager:
         try:
             for cal_id in calendars_to_check:
                 events_result = (
-                    self.service.events()
+                    service.events()
                     .list(
                         calendarId=cal_id,
                         timeMin=now,
@@ -275,7 +310,8 @@ class CalendarManager:
         Returns:
             str: A string representation of the events.
         """
-        if not self.service:
+        service = self.services.get("calendar")
+        if not service:
             return "Calendar service not initialized."
 
         # Create start and end time for the given date in the local system's timezone
@@ -295,7 +331,7 @@ class CalendarManager:
         try:
             for cal_id in calendars_to_check:
                 events_result = (
-                    self.service.events()
+                    service.events()
                     .list(
                         calendarId=cal_id,
                         timeMin=start_of_day,
@@ -341,3 +377,93 @@ class CalendarManager:
 
         except HttpError as error:
             return f"An error occurred while fetching events for {date}: {error}"
+
+    # --- Gmail Methods ---
+
+    def get_emails_from_last_days(self, days: int = 3) -> List[dict]:
+        """
+        Fetches emails from the last `days` days with label 'TODOBOT'.
+
+        Args:
+            days (int): Number of days to look back.
+
+        Returns:
+            List[dict]: A list of emails with 'date', 'sender', and 'content'.
+        """
+        service = self.services.get("gmail")
+        if not service:
+            print("Gmail service not initialized.")
+            return []
+
+        # Calculate date query: after:YYYY/MM/DD
+        today = datetime.date.today()
+        query_date = today - datetime.timedelta(days=days)
+        query_date_str = query_date.strftime("%Y/%m/%d")
+
+        # Query: label:TODOBOT after:YYYY/MM/DD
+        query = f"label:TODOBOT after:{query_date_str}"
+
+        try:
+            results = service.users().messages().list(userId="me", q=query).execute()
+            messages = results.get("messages", [])
+
+            email_data = []
+
+            for msg in messages:
+                msg_detail = service.users().messages().get(userId="me", id=msg["id"]).execute()
+                payload = msg_detail.get("payload", {})
+                headers = payload.get("headers", [])
+
+                # Extract headers
+                sender = ""
+                date = ""
+                subject = ""
+                for header in headers:
+                    name = header.get("name")
+                    if name == "From":
+                        sender = header.get("value")
+                    elif name == "Date":
+                        date = header.get("value")
+                    elif name == "Subject":
+                        subject = header.get("value")
+
+                # Extract email address from Sender (e.g., "Name <email@example.com>")
+                if "<" in sender and ">" in sender:
+                    sender_email = sender.split("<")[1].split(">")[0]
+                else:
+                    sender_email = sender
+
+                # Extract Body
+                body = ""
+                if "parts" in payload:
+                    for part in payload["parts"]:
+                        if part.get("mimeType") == "text/plain":
+                            data = part.get("body", {}).get("data")
+                            if data:
+                                body = base64.urlsafe_b64decode(data).decode("utf-8")
+                                break
+                else:
+                    # Fallback for simple messages
+                    data = payload.get("body", {}).get("data")
+                    if data:
+                        body = base64.urlsafe_b64decode(data).decode("utf-8")
+
+                # If body is still empty, maybe it's in a nested structure or just empty
+                if not body:
+                    body = snippet = msg_detail.get("snippet", "")
+
+                email_data.append({
+                    "date": date,
+                    "sender": sender_email,
+                    "subject": subject,
+                    "content": body
+                })
+
+            # Sort by date? The API returns loosely sorted, but robust sort is better.
+            # However, date string parsing is complex. Let's rely on API order or just keep list.
+            # For this task, we can just return the list.
+            return email_data
+
+        except HttpError as error:
+            print(f"An error occurred fetching emails: {error}")
+            return []

@@ -1,6 +1,6 @@
 from google import genai
 from google.genai import types
-from src.calendar_manager import CalendarManager
+from src.google_service_manager import GoogleServiceManager
 import datetime
 import time
 import logging
@@ -10,7 +10,7 @@ SECRETARY_PROMPT = """
 Current Date: {today}
 
 You are a productivity guru and an expert personal assistant. You are tasked with planning my day today.
-In order to accomplish this task you will be given three key pieces data.
+In order to accomplish this task you will be given four key pieces data.
 
 Personal Scheduling Preferences: This is a detailed list of general rules I tend to follow day to day. I am a person with established daily routines.
 For the most part these won't be changed and are going to heavily dictate what windows you have to work with when scheduling!
@@ -31,6 +31,12 @@ Keep your eye out for tasks that group together really well into a single timesl
 This time is the preferred time of day I like doing this task, but it is also just a suggestion.
 Some tasks may have descriptions enclosed in parenthesis, and these descriptions provide important context for scheduling decisions.
 Trust your prioritizaiton and scheduling skills.
+
+Recent User Input: This is a collection of recent communications (emails) that I have sent.
+This is arguably the most critical context because it contains my latest thoughts, adjustments, and immediate needs.
+You MUST prioritize this information heavily. If I say something here that contradicts "Personal Scheduling Preferences" or "Potential Tasks", the "Recent User Input" takes precedence.
+This section is formatted with dates, so pay close attention to the chronology.
+The most recent entries are the most important. Use this context to inform your scheduling decisions, prioritize tasks, or even add new implicit tasks mentioned in these messages.
 
 With all this information you will have enough context to start making decisions. Here are some extra instructions you should try to follow.
 You will need to calculate how long you think tasks take in order to effectively make this schedule.
@@ -58,33 +64,37 @@ Personal Scheduling Preferences:
 
 Potential Tasks:
 {potential_tasks}
+
+Recent User Input:
+{recent_user_input}
 """
 
 
 class GeminiManager:
-    def __init__(self, api_key, calendar_manager: CalendarManager):
+    def __init__(self, api_key, google_service_manager: GoogleServiceManager):
         self.client = genai.Client(api_key=api_key)
-        self.calendar_manager = calendar_manager
+        self.google_service_manager = google_service_manager
 
         # Define the tools that Gemini can use
-        self.tools = [self.calendar_manager.add_event]
+        self.tools = [self.google_service_manager.add_event]
 
-    def generate_full_prompt(self, personal_scheduling_preferences, potential_tasks):
+    def generate_full_prompt(self, personal_scheduling_preferences, potential_tasks, recent_user_input=""):
         today = datetime.date.today()
-        existing_events = self.calendar_manager.get_events_for_day(today)
+        existing_events = self.google_service_manager.get_events_for_day(today)
         return SECRETARY_PROMPT.format(
             today=today,
             existing_events=existing_events,
             personal_scheduling_preferences=personal_scheduling_preferences,
             potential_tasks=potential_tasks,
+            recent_user_input=recent_user_input,
         )
 
-    def generate_and_execute(self, personal_scheduling_preferences, potential_tasks):
+    def generate_and_execute(self, personal_scheduling_preferences, potential_tasks, recent_user_input=""):
         """
         Sends the prompt to Gemini and handles tool calls.
         """
         full_prompt = self.generate_full_prompt(
-            personal_scheduling_preferences, potential_tasks
+            personal_scheduling_preferences, potential_tasks, recent_user_input
         )
 
         max_retries = 5

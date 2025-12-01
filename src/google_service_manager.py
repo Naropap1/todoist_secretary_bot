@@ -115,6 +115,21 @@ class GoogleServiceManager:
             device_code_url,
             data={"client_id": client_id, "scope": " ".join(scopes)},
         )
+
+        if response.status_code != 200:
+            print(f"\nError requesting device code (Status {response.status_code}):")
+            print(response.text)
+            if response.status_code == 400:
+                print(
+                    "\nHint: A 400 error often means the Client ID is incorrect for the Device Flow."
+                )
+                print(
+                    "Please ensure your Client ID in client_secret.json matches a 'TVs and Limited Input devices' credential in Google Cloud Console."
+                )
+                print(
+                    "Also verify that the requested scopes are enabled in the project."
+                )
+
         response.raise_for_status()
         data = response.json()
 

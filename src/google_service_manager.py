@@ -7,6 +7,7 @@ import base64
 from typing import List, Optional
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
@@ -17,6 +18,7 @@ class GoogleServiceManager:
         client_secret_file="client_secret.json",
         token_file="token.json",
         services: Optional[List[str]] = None,
+        auth_flow: str = "device",
     ):
         """
         Initializes the GoogleServiceManager.
@@ -26,11 +28,14 @@ class GoogleServiceManager:
             token_file (str): Path to the token file.
             services (List[str]): List of services to initialize (e.g., ["calendar", "gmail"]).
                                   Defaults to ["calendar"] for backward compatibility.
+            auth_flow (str): The authentication flow to use. Either "device" or "installed".
+                             Defaults to "device".
         """
         self.creds = None
         self.client_secret_file = client_secret_file
         self.token_file = token_file
         self.services_config = services or ["calendar"]
+        self.auth_flow = auth_flow
         self.services = {}  # Stores initialized service objects (e.g., 'calendar', 'gmail')
         self.bot_calendar_id = None
 
@@ -64,12 +69,20 @@ class GoogleServiceManager:
                     )
                     return
 
-                print("\nInitiating authentication (Device Flow)...")
-                try:
-                    self.creds = self.authenticate_device_flow(self.scopes)
-                except Exception as e:
-                    print(f"Device Flow failed: {e}")
-                    return
+                if self.auth_flow == "installed":
+                    print("\nInitiating authentication (Installed App Flow)...")
+                    try:
+                        self.creds = self.authenticate_installed_app_flow(self.scopes)
+                    except Exception as e:
+                        print(f"Installed App Flow failed: {e}")
+                        return
+                else:
+                    print("\nInitiating authentication (Device Flow)...")
+                    try:
+                        self.creds = self.authenticate_device_flow(self.scopes)
+                    except Exception as e:
+                        print(f"Device Flow failed: {e}")
+                        return
 
             # Save the credentials for the next run
             # Ensure the directory exists
@@ -176,6 +189,15 @@ class GoogleServiceManager:
                 )
             else:
                 raise Exception(f"Failed to get token: {error}")
+
+    def authenticate_installed_app_flow(self, scopes):
+        """
+        Authenticates the user using the Installed App Flow (local browser).
+        """
+        flow = InstalledAppFlow.from_client_secrets_file(
+            self.client_secret_file, scopes
+        )
+        return flow.run_local_server(port=0)
 
     # --- Calendar Methods ---
 

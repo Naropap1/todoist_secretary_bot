@@ -3,6 +3,8 @@ credentials.json
 client_secret.json
 token.json
 tokens/
+auth_utils/client_secret.json
+auth_utils/token_admin.json
 
 # Python
 __pycache__/

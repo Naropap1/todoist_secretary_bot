@@ -61,13 +61,38 @@ You need to create a `credentials.json` file in the root directory. A template `
         *   Go to "APIs & Services" > "OAuth consent screen".
         *   Configure it (User Type: External).
         *   Add your email (and any user emails) as **Test Users**.
-    *   **Create Credentials:**
+
+    #### Generating Credentials
+
+    You will need TWO different OAuth Client IDs for this project:
+
+    1.  **For Calendar Integration (main.py):**
         *   Go to "APIs & Services" > "Credentials".
         *   Click "Create Credentials" > "OAuth client ID".
         *   Application type: **TVs and Limited Input devices**.
-        *   Download the JSON file, rename it to `client_secret.json`, and place it in the root directory of this project.
+        *   Download the JSON file, rename it to `client_secret.json`, and place it in the **root directory** of this project.
 
-### 3. Configure Gmail (Admin)
+    2.  **For Gmail Integration (auth_utils/generate_gmail_token.py):**
+        *   Go to "APIs & Services" > "Credentials".
+        *   Click "Create Credentials" > "OAuth client ID".
+        *   Application type: **Desktop app**.
+        *   Download the JSON file, rename it to `client_secret.json`, and place it in the **auth_utils directory** (`auth_utils/client_secret.json`).
+
+### 3. Generate Admin Gmail Token
+
+Because the Admin Gmail integration requires "Desktop app" credentials (to support the read-only scope properly via a browser flow), you must run a separate script to generate the initial token.
+
+1.  Ensure you have placed the **Desktop app** type `client_secret.json` in the `auth_utils/` folder.
+2.  Run the generation script:
+
+    ```bash
+    python auth_utils/generate_gmail_token.py
+    ```
+
+3.  A browser window will open. Log in with the Admin Google account.
+4.  Once successful, the script will save `token_admin.json` to the `tokens/` directory automatically.
+
+### 4. Configure Gmail (Admin)
 
 The "Admin" email address (specified in `credentials.json`) acts as the central receiver for instructions.
 
@@ -88,7 +113,7 @@ The "Admin" email address (specified in `credentials.json`) acts as the central 
 
 **How it works:** Users send an email to the Admin address with `[TODOBOT]` in the subject. Gmail automatically labels it `TODOBOT` and archives it. The script reads these labeled emails.
 
-### 4. First Run & Adding Users
+### 5. First Run & Adding Users
 
 Update `credentials.json` with the `admin_email` and user details (including `email`).
 
@@ -100,8 +125,8 @@ python main.py
 
 **Authentication:**
 
-1.  **Admin Auth:** The script will first ask you to authorize the **Admin** account (for Gmail access). Follow the link and enter the code.
-2.  **User Auth:** Then, it will iterate through users and ask for authorization for their **Calendar** access.
+1.  **Admin Auth:** Since you generated the `token_admin.json` in Step 3, the script should automatically pick it up.
+2.  **User Auth:** The script will iterate through users and ask for authorization for their **Calendar** access (using the device flow/console output).
 
 ## Usage
 

@@ -69,7 +69,8 @@ def main():
             admin_service_manager = GoogleServiceManager(
                 client_secret_file=client_secret,
                 token_file=admin_token_file,
-                services=["gmail"]
+                services=["gmail"],
+                auth_flow="installed"
             )
             all_recent_emails = admin_service_manager.get_emails_from_last_days(3)
             print(f"Fetched {len(all_recent_emails)} emails from the last 3 days.")
@@ -141,7 +142,8 @@ def main():
             calendar_manager = GoogleServiceManager(
                 client_secret_file=client_secret,
                 token_file=token_file,
-                services=["calendar"]
+                services=["calendar"],
+                auth_flow="device"
             )
 
             gemini_manager = GeminiManager(gemini_api_key, calendar_manager)

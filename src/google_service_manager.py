@@ -19,6 +19,7 @@ class GoogleServiceManager:
         token_file="token.json",
         services: Optional[List[str]] = None,
         auth_flow: str = "device",
+        interactive: bool = True,
     ):
         """
         Initializes the GoogleServiceManager.
@@ -30,12 +31,16 @@ class GoogleServiceManager:
                                   Defaults to ["calendar"] for backward compatibility.
             auth_flow (str): The authentication flow to use. Either "device" or "installed".
                              Defaults to "device".
+            interactive (bool): If True, will attempt to authenticate interactively (browser or device code)
+                                if the token is missing or invalid. If False, it will raise an error.
+                                Defaults to True.
         """
         self.creds = None
         self.client_secret_file = client_secret_file
         self.token_file = token_file
         self.services_config = services or ["calendar"]
         self.auth_flow = auth_flow
+        self.interactive = interactive
         self.services = {}  # Stores initialized service objects (e.g., 'calendar', 'gmail')
         self.bot_calendar_id = None
 
@@ -63,6 +68,12 @@ class GoogleServiceManager:
                     self.creds = None # Force re-auth
 
             if not self.creds: # Check again if refresh failed
+                if not self.interactive:
+                    raise Exception(
+                        f"Authentication required but interactive mode is disabled. "
+                        f"Please provide a valid token file at '{self.token_file}'."
+                    )
+
                 if not os.path.exists(self.client_secret_file):
                     print(
                         f"Error: {self.client_secret_file} not found. Please download it from Google Cloud Console."

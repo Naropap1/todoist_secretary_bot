@@ -70,7 +70,8 @@ def main():
                 client_secret_file=client_secret,
                 token_file=admin_token_file,
                 services=["gmail"],
-                auth_flow="installed"
+                auth_flow="installed",
+                interactive=False
             )
             all_recent_emails = admin_service_manager.get_emails_from_last_days(3)
             print(f"Fetched {len(all_recent_emails)} emails from the last 3 days.")

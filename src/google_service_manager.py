@@ -348,6 +348,60 @@ class GoogleServiceManager:
         except HttpError as error:
             return f"An error occurred: {error}"
 
+    def clear_events_for_day(self, date: datetime.date) -> str:
+        """
+        Clears all events from the secretary_bot calendar for a specific day.
+
+        Args:
+            date (datetime.date): The date to clear events for.
+
+        Returns:
+            str: A status message indicating how many events were deleted.
+        """
+        service = self.services.get("calendar")
+        if not service:
+            return "Calendar service not initialized."
+
+        if not self.bot_calendar_id:
+            return "No secretary_bot calendar found."
+
+        # Create start and end time for the given date in the local system's timezone
+        start_of_day = (
+            datetime.datetime.combine(date, datetime.time.min).astimezone().isoformat()
+        )
+        end_of_day = (
+            datetime.datetime.combine(date, datetime.time.max).astimezone().isoformat()
+        )
+
+        try:
+            events_result = (
+                service.events()
+                .list(
+                    calendarId=self.bot_calendar_id,
+                    timeMin=start_of_day,
+                    timeMax=end_of_day,
+                    singleEvents=True,
+                    orderBy="startTime",
+                )
+                .execute()
+            )
+            events = events_result.get("items", [])
+
+            if not events:
+                return f"No events found to clear on {date}."
+
+            count = 0
+            for event in events:
+                service.events().delete(
+                    calendarId=self.bot_calendar_id, eventId=event["id"]
+                ).execute()
+                count += 1
+
+            return f"Successfully cleared {count} events from secretary_bot calendar for {date}."
+
+        except HttpError as error:
+            return f"An error occurred while clearing events: {error}"
+
     def get_events_for_day(self, date: datetime.date) -> str:
         """
         Gets events for a specific day.

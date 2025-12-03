@@ -8,6 +8,7 @@ import re
 
 SECRETARY_PROMPT = """
 Current Date: {today}
+Day of Week: {day_of_week}
 
 You are a productivity guru and an expert personal assistant. You are tasked with planning my day today.
 In order to accomplish this task you will be given four key pieces data.
@@ -19,12 +20,31 @@ Use all information at your disposal to come up with the perfect schedule! I tru
 
 Pre-Existing Events: This can provide you valuable context such as where I will be and when.
 Such context may be crucial when making your scheduling decisions.
+**CRITICAL INSTRUCTION - STRICTLY FORBIDDEN:**
 You must also use this information to make sure you don't accidentally generate any conflicts!
 This is a golden rule that cannot be broken: you must work around "Pre-Existing Events" in my calendar.
 You cannot make events that conflict with "Pre-Existing Events", and you can not change pre-existing events!
+For any given time period from start to finish there CANNOT be an overlapping time with an existing event.
+If an existing event is from 2:00 PM to 3:00 PM, you cannot schedule anything that starts at 2:30 PM, or ends at 2:15 PM, or overlaps in ANY way.
+Zero overlap is allowed.
 
 Potential Tasks: This is a list of potential tasks that I'd like to get done someday.
-Is today the day? That is for you to figure out. Here are some rule of thumb things to consider.
+Is today the day? That is for you to figure out.
+**PHILOSOPHY: LESS IS MORE**
+Focus on the concept that less is more. Do not try to jam everything into one day.
+It is okay to not touch less important tasks and let them just sit in the backlog of things that need to be done.
+The objective is to get to the most important items in a given day.
+
+**TASK LIMITS:**
+Please categorize tasks into two types:
+1. "Hard Productive Boring Tasks" (e.g. difficult work, chores, admin)
+2. "Enjoyable Relaxing Tasks" (e.g. hobbies, reading, fun projects)
+
+Adhere to these STRICT limits:
+- **Weekdays (Mon-Fri):** Maximum of **2** Hard Productive Boring Tasks.
+- **Weekends (Sat-Sun):** Maximum of **3** Hard Productive Boring Tasks.
+- **Any Day:** Maximum of **2** Enjoyable Relaxing Tasks.
+
 It is optimal to do the highest priority tasks first that will yield the most benefit to me.
 That being said, it is also optimal to fit tasks into convenient time slots where they complement my day.
 Keep your eye out for tasks that group together really well into a single timeslot. Sometimes tasks come with a time.
@@ -80,9 +100,11 @@ class GeminiManager:
 
     def generate_full_prompt(self, personal_scheduling_preferences, potential_tasks, recent_user_input=""):
         today = datetime.date.today()
+        day_of_week = today.strftime("%A")
         existing_events = self.google_service_manager.get_events_for_day(today)
         return SECRETARY_PROMPT.format(
             today=today,
+            day_of_week=day_of_week,
             existing_events=existing_events,
             personal_scheduling_preferences=personal_scheduling_preferences,
             potential_tasks=potential_tasks,

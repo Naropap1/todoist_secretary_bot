@@ -98,7 +98,9 @@ class GeminiManager:
         # Define the tools that Gemini can use
         self.tools = [self.google_service_manager.add_event]
 
-    def generate_full_prompt(self, personal_scheduling_preferences, potential_tasks, recent_user_input=""):
+    def generate_full_prompt(
+        self, personal_scheduling_preferences, potential_tasks, recent_user_input=""
+    ):
         today = datetime.date.today()
         day_of_week = today.strftime("%A")
         existing_events = self.google_service_manager.get_events_for_day(today)
@@ -111,7 +113,9 @@ class GeminiManager:
             recent_user_input=recent_user_input,
         )
 
-    def generate_and_execute(self, personal_scheduling_preferences, potential_tasks, recent_user_input=""):
+    def generate_and_execute(
+        self, personal_scheduling_preferences, potential_tasks, recent_user_input=""
+    ):
         """
         Sends the prompt to Gemini and handles tool calls.
         """
@@ -125,7 +129,7 @@ class GeminiManager:
         for attempt in range(max_retries):
             try:
                 chat = self.client.chats.create(
-                    model="gemini-2.5-pro",
+                    model="gemini-2.5-flash",
                     config=types.GenerateContentConfig(tools=self.tools),
                 )
                 response = chat.send_message(full_prompt)
